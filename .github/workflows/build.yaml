@@ -19,10 +19,10 @@ jobs:
           submodules: recursive
 
       - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          cache: true
+  uses: subosito/flutter-action@v2
+  with:
+    flutter-version: '3.29.3'
+    cache: true
 
       - name: Setup Java
         uses: actions/setup-java@v4
