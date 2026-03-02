@@ -1,16 +1,14 @@
-name: Android Build
+name: Windows Build
 
 on:
   push:
     tags:
       - 'v*'
-
-env:
-  IS_STABLE: ${{ !contains(github.ref, '-') }}
+  workflow_dispatch:
 
 jobs:
-  build-android:
-    runs-on: ubuntu-latest
+  build-windows:
+    runs-on: windows-latest
 
     steps:
       - name: Checkout
@@ -21,16 +19,13 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-         flutter-version: 3.35.5
-         cache: true
+          flutter-version: 3.35.5
+          cache: true
 
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 17
+      - name: Enable Windows Desktop
+        run: flutter config --enable-windows-desktop
 
-      - name: Install Dependencies
+      - name: Get Dependencies
         run: flutter pub get
 
       - name: Generate SDK Code
@@ -43,29 +38,19 @@ jobs:
       - name: Generate Main Project Code
         run: dart run build_runner build --delete-conflicting-outputs
 
-      - name: Build Android APK
-        run: flutter build apk --release
+      - name: Build Windows Release
+        run: flutter build windows --release
 
       - name: Prepare dist folder
         run: |
           mkdir dist
-          cp build/app/outputs/flutter-apk/app-release.apk dist/
+          xcopy build\windows\x64\runner\Release dist\windows /E /I
 
-      - name: Generate sha256
-        run: |
-          cd dist
-          for file in *; do
-            sha256sum "$file" > "$file.sha256"
-          done
+      - name: Zip Windows Build
+        run: powershell Compress-Archive -Path dist\windows\* -DestinationPath dist\windows-release.zip
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: android-release
-          path: dist/*
-
-      - name: Create Release
-        if: ${{ env.IS_STABLE == 'true' }}
-        uses: softprops/action-gh-release@v2
-        with:
-          files: dist/*
+          name: windows-release
+          path: dist/windows-release.zip
